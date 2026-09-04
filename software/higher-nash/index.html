@@ -3,31 +3,31 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Higher Nash Modification — Interactive Demonstration</title>
+<title>Higher Nash Modification Toolkit</title>
 <script src="https://cdn.jsdelivr.net/pyodide/v0.28.2/full/pyodide.js"></script>
 <style>
-:root { --line:#d8d8d8; --muted:#666; --bg:#fafafa; --ink:#202020; --accent:#174a7e; }
+:root{--line:#d8d8d8;--muted:#666;--bg:#fafafa;--ink:#202020;--accent:#174a7e}
 *{box-sizing:border-box}
-body{margin:0;font-family:Georgia,"Times New Roman",serif;color:var(--ink);background:white;line-height:1.55}
-main{max-width:900px;margin:48px auto;padding:0 24px}
-h1{font-size:2rem;font-weight:500;margin-bottom:.35rem}
-h2{font-size:1.35rem;font-weight:500;margin-top:2rem;border-bottom:1px solid var(--line);padding-bottom:.35rem}
+body{margin:0;font-family:Georgia,"Times New Roman",serif;color:var(--ink);line-height:1.55}
+main{max-width:940px;margin:48px auto;padding:0 24px}
+h1{font-size:2rem;font-weight:500;margin:0 0 8px}
+h2{font-size:1.35rem;font-weight:500;margin-top:32px;border-bottom:1px solid var(--line);padding-bottom:5px}
 .lead,.note{color:var(--muted)}
 .panel{border:1px solid var(--line);padding:22px;margin:24px 0;background:var(--bg)}
 .row{display:flex;gap:18px;align-items:end;flex-wrap:wrap}
 label{display:flex;flex-direction:column;gap:5px;font-size:.95rem}
-input,select,button{font:inherit;min-height:44px;padding:8px 11px;border:1px solid #aaa;background:white}
+input,button{font:inherit;min-height:44px;padding:8px 11px;border:1px solid #aaa;background:white}
 input{width:90px}
 button{cursor:pointer;border-color:var(--accent);color:white;background:var(--accent)}
 button:disabled{opacity:.55;cursor:wait}
 .status{margin-top:14px;color:var(--muted)}
+.status.error{color:#8a2020}
 .result{display:none}
-.math{overflow-x:auto;padding:10px 0}
+.math{overflow-x:auto;padding:6px 0}
 .card{border-top:1px solid var(--line);padding:14px 0}
-pre{white-space:pre-wrap;overflow:auto;background:#f4f4f4;padding:12px;font-family:ui-monospace,SFMono-Regular,monospace;font-size:.86rem}
-.links{display:flex;gap:12px;flex-wrap:wrap}
-.links a{color:var(--accent)}
-.badge{display:inline-block;border:1px solid var(--line);padding:3px 8px;margin:3px 4px 3px 0;font-size:.9rem}
+.badge{display:inline-block;border:1px solid var(--line);padding:3px 8px;margin:3px 4px 3px 0}
+details{margin-top:20px}
+summary{cursor:pointer}
 </style>
 </head>
 <body>
@@ -36,159 +36,141 @@ pre{white-space:pre-wrap;overflow:auto;background:#f4f4f4;padding:12px;font-fami
 <p class="lead">Interactive demonstration of the computational procedure used in the thesis.</p>
 
 <section class="panel">
-  <div class="row">
-    <label>Jacobian order
-      <input id="order" type="number" min="1" max="15" step="1" value="5">
-    </label>
-    <button id="run" type="button">Run computation</button>
-  </div>
-  <p class="note">The displayed example is fixed to the polynomial, divisor and chart used in the thesis. Only the computational order is exposed here.</p>
-  <div id="status" class="status" aria-live="polite">Loading Python environment…</div>
+<div class="row">
+<label>Jacobian order
+<input id="order" type="number" min="1" max="6" step="1" value="5">
+</label>
+<button id="run" type="button" disabled>Loading…</button>
+</div>
+<p class="note">The polynomial, divisor and chart are fixed to the thesis example. The calculation is performed locally in your browser; no Python server is required.</p>
+<div id="status" class="status" aria-live="polite">Loading Python environment…</div>
 </section>
 
 <section id="result" class="result">
-<h2>Input</h2>
-<div id="input"></div>
-
-<h2>Curves</h2>
-<div id="curves"></div>
-
-<h2>Optimal matchings</h2>
-<div id="matchings"></div>
-
-<h2>Determinants and evaluations</h2>
-<div id="determinants"></div>
-
-<h2>Limits</h2>
-<div id="limits"></div>
-
-<h2>Conclusion</h2>
-<p id="conclusion"></p>
+<h2>Input</h2><div id="input"></div>
+<h2>Curves</h2><div id="curves"></div>
+<h2>Optimal matchings</h2><div id="matchings"></div>
+<h2>Determinants and evaluations</h2><div id="determinants"></div>
+<h2>Limits</h2><div id="limits"></div>
+<h2>Conclusion</h2><p id="conclusion"></p>
 
 <div class="panel">
-  <strong>Reproducibility</strong>
-  <p>The complete Python source is available separately. The interface does not expose an editable code field; the calculation is executed in the browser.</p>
-  <div class="links">
-    <a href="../Funciones.py">Python source</a>
-    <a href="https://github.com/AlexTenoVaz/higher-nash-tools/blob/main/notebooks/Higher_Jacobian_Matrix.ipynb" target="_blank" rel="noopener">Google Colab / Notebook</a>
-  </div>
+<strong>Reproducibility</strong>
+<p>The complete Python implementation remains available separately. This interface does not provide an editable code field.</p>
+<div>
+<a href="./Funciones.py">Functions source</a>
+&nbsp;·&nbsp;
+<a href="https://github.com/AlexTenoVaz/higher-nash-tools/blob/main/notebooks/Higher_Jacobian_Matrix.ipynb" target="_blank" rel="noopener">Notebook</a>
+</div>
 </div>
 </section>
 </main>
 
 <script>
-let pyodide = null;
-let initialized = false;
+let pyodide=null, ready=false;
 
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
+const math=s=>`<span class="math">\\(${s}\\)</span>`;
+const mathList=a=>a.map(math).join(" ");
 
-function math(s) {
-  return `<span class="math">\\(${s}\\)</span>`;
+function render(d){
+  $("input").innerHTML=`<p><b>Polynomial:</b> ${math(d.polynomial)}</p>
+  <p><b>Divisor:</b> ${math(d.divisor)}</p>
+  <p><b>Jacobian order:</b> ${d.jac_order} &nbsp; <b>Chart:</b> ${d.chart}</p>`;
+
+  $("curves").innerHTML=
+    `<div class="card"><b>Curves on the exceptional divisor</b><br>`+
+    d.curves.map((c,i)=>`C<sub>${i+1}</sub> = ${mathList(c)}`).join("<br>")+
+    `</div><div class="card"><b>Curves on the variety</b><br>`+
+    d.curves_down.map((c,i)=>`C<sub>${i+1}</sub> = ${mathList(c)}`).join("<br>")+
+    `</div><div class="card"><b>Exponent vectors used</b><br>`+
+    d.exponents_used.map((e,i)=>`C<sub>${i+1}</sub>: (${e.join(", ")})`).join("<br>")+
+    `</div>`;
+
+  $("matchings").innerHTML=`<p>${d.matching_count} optimal matching(s). Minimum cost: ${d.cost}.</p>`+
+    d.matchings.map((m,i)=>`<span class="badge">M<sub>${i+1}</sub>: [${m.join(", ")}]</span>`).join("");
+
+  $("determinants").innerHTML=d.determinants.map((det,i)=>{
+    const e=d.evaluations[i];
+    return `<div class="card"><b>M<sub>${i+1}</sub></b>
+      <div>${math(det)}</div>
+      <div>M<sub>${i+1}</sub>(C<sub>1</sub>) = ${math(e[0])}</div>
+      <div>M<sub>${i+1}</sub>(C<sub>2</sub>) = ${math(e[1])}</div></div>`;
+  }).join("");
+
+  const c=d.comparison;
+  $("limits").innerHTML=c?
+    `<div class="card">
+    <div>${math(`\\lim_{t\\to0}\\frac{M_${c.m2}(C_1)}{M_${c.m1}(C_1)}=${c.r21_11}`)}</div>
+    <div>${math(`\\lim_{t\\to0}\\frac{M_${c.m2}(C_2)}{M_${c.m1}(C_2)}=${c.r22_12}`)}</div>
+    <div>${math(`\\lim_{t\\to0}\\frac{M_${c.m1}(C_1)}{M_${c.m2}(C_1)}=${c.r11_21}`)}</div>
+    <div>${math(`\\lim_{t\\to0}\\frac{M_${c.m1}(C_2)}{M_${c.m2}(C_2)}=${c.r12_22}`)}</div>
+    </div>`:
+    "<p>No valid pair of matchings was obtained for this order.</p>";
+
+  $("conclusion").textContent=d.conclusion;
+  $("result").style.display="block";
+  if(window.MathJax) MathJax.typesetPromise();
 }
 
-function listMath(arr) {
-  return arr.map(x => math(x)).join(" ");
-}
+async function init(){
+  try{
+    if(typeof loadPyodide!=="function") throw new Error("Pyodide failed to load from the CDN.");
+    pyodide=await loadPyodide({indexURL:"https://cdn.jsdelivr.net/pyodide/v0.28.2/full/"});
 
-function render(data) {
-  $("input").innerHTML =
-    `<p><b>Polynomial:</b> ${math(data.polynomial)}</p>
-     <p><b>Divisor:</b> ${math(data.divisor)}</p>
-     <p><b>Jacobian order:</b> ${data.jac_order}
-     &nbsp;&nbsp; <b>Chart:</b> ${data.chart}</p>`;
+    // These packages are part of the Pyodide distribution; no PyPI install is needed.
+    await pyodide.loadPackage(["numpy","sympy","networkx"]);
 
-  $("curves").innerHTML =
-    `<div class="card"><b>Curves on the exceptional divisor</b><br>
-      ${data.curves.map((c,i)=>`C<sub>${i+1}</sub> = ${listMath(c)}`).join("<br>")}</div>
-     <div class="card"><b>Curves on the variety</b><br>
-      ${data.curves_down.map((c,i)=>`C<sub>${i+1}</sub> = ${listMath(c)}`).join("<br>")}</div>
-     <div class="card"><b>Exponent vectors</b><br>
-      ${data.exponents.map((e,i)=>`C<sub>${i+1}</sub>: (${e.join(", ")})`).join("<br>")}</div>`;
+    const base=new URL("./",window.location.href);
+    const fURL=new URL("Funciones.py",base);
+    const eURL=new URL("web_engine.py",base);
 
-  $("matchings").innerHTML =
-    `<p>${data.matching_count} optimal matching(s) found. Minimum cost: ${data.cost}.</p>` +
-    data.matchings.map((m,i)=>
-      `<span class="badge">M<sub>${i+1}</sub>: [${m.join(", ")}]</span>`).join("");
+    const [fRes,eRes]=await Promise.all([fetch(fURL),fetch(eURL)]);
+    if(!fRes.ok) throw new Error(`Funciones.py could not be loaded (${fRes.status}).`);
+    if(!eRes.ok) throw new Error(`web_engine.py could not be loaded (${eRes.status}).`);
 
-  $("determinants").innerHTML =
-    data.determinants.map((d,i)=>{
-      const ev = data.evaluations[i];
-      return `<div class="card">
-        <b>M<sub>${i+1}</sub></b>
-        <div>${math(d)}</div>
-        <div>M<sub>${i+1}</sub>(C<sub>1</sub>) = ${math(ev[0])}</div>
-        <div>M<sub>${i+1}</sub>(C<sub>2</sub>) = ${math(ev[1])}</div>
-      </div>`;
-    }).join("");
-
-  const c = data.comparison;
-  $("limits").innerHTML = c ? `
-    <div class="card">
-      <p>For M<sub>${c.m1}</sub> and M<sub>${c.m2}</sub>:</p>
-      <div>${math(`\\lim_{t\\to0}\\frac{M_${c.m2}(C_1)}{M_${c.m1}(C_1)}=${c.r21_11}`)}</div>
-      <div>${math(`\\lim_{t\\to0}\\frac{M_${c.m2}(C_2)}{M_${c.m1}(C_2)}=${c.r22_12}`)}</div>
-      <div>${math(`\\lim_{t\\to0}\\frac{M_${c.m1}(C_1)}{M_${c.m2}(C_1)}=${c.r11_21}`)}</div>
-      <div>${math(`\\lim_{t\\to0}\\frac{M_${c.m1}(C_2)}{M_${c.m2}(C_2)}=${c.r12_22}`)}</div>
-    </div>` : "<p>No valid pair of matchings was obtained for this order.</p>";
-
-  $("conclusion").textContent = data.conclusion;
-  $("result").style.display = "block";
-
-  if (window.MathJax) MathJax.typesetPromise();
-}
-
-async function init() {
-  try {
-    pyodide = await loadPyodide();
-    await pyodide.loadPackage(["numpy", "sympy"]);
-    const micropip = pyodide.pyimport("micropip");
-    await micropip.install("networkx");
-
-    const functionsSource = await fetch("../Funciones.py").then(r => {
-      if (!r.ok) throw new Error("Could not load Funciones.py");
-      return r.text();
-    });
-    const engineSource = await fetch("./web_engine.py").then(r => {
-      if (!r.ok) throw new Error("Could not load web_engine.py");
-      return r.text();
-    });
-
-    pyodide.FS.writeFile("Funciones.py", functionsSource);
-    pyodide.FS.writeFile("web_engine.py", engineSource);
+    pyodide.FS.writeFile("/Funciones.py",await fRes.text());
+    pyodide.FS.writeFile("/web_engine.py",await eRes.text());
     await pyodide.runPythonAsync("import web_engine");
 
-    initialized = true;
-    $("status").textContent = "Ready.";
-    $("run").disabled = false;
-  } catch (err) {
+    ready=true;
+    $("run").disabled=false;
+    $("run").textContent="Run computation";
+    $("status").textContent="Ready.";
+  }catch(err){
     console.error(err);
-    $("status").textContent = "The online Python environment could not be initialized. The local Python source remains available below.";
-    $("run").disabled = true;
+    $("status").classList.add("error");
+    $("status").innerHTML="Could not initialize the online Python environment.<br><small>"+
+      String(err.message||err)+"</small>";
+    $("run").textContent="Unavailable";
   }
 }
 
-$("run").addEventListener("click", async () => {
-  if (!initialized) return;
-  const order = Math.max(1, Math.min(6, Number.parseInt($("order").value, 10) || 5));
-  $("run").disabled = true;
-  $("status").textContent = "Running symbolic computation…";
-  try {
-    const json = await pyodide.runPythonAsync(`web_engine.run_demo_json(${order})`);
-    render(JSON.parse(json));
-    $("status").textContent = "Computation completed.";
-  } catch (err) {
+$("run").addEventListener("click",async()=>{
+  if(!ready)return;
+  let order=Math.max(1,Math.min(6,parseInt($("order").value,10)||5));
+  $("order").value=order;
+  $("run").disabled=true;
+  $("run").textContent="Computing…";
+  $("status").textContent="Running symbolic computation. This may take a moment.";
+  try{
+    const result=await pyodide.runPythonAsync(`web_engine.run_demo_json(${order})`);
+    render(JSON.parse(result));
+    $("status").textContent="Computation completed.";
+  }catch(err){
     console.error(err);
-    $("status").textContent = "The computation failed for this parameter.";
-  } finally {
-    $("run").disabled = false;
+    $("status").classList.add("error");
+    $("status").innerHTML="The computation failed.<br><small>"+String(err.message||err)+"</small>";
+  }finally{
+    $("run").disabled=false;
+    $("run").textContent="Run computation";
   }
 });
 
-$("run").disabled = true;
 init();
 </script>
 <script>
-window.MathJax = {tex:{inlineMath:[['\\(','\\)']]}, svg:{fontCache:'global'}};
+window.MathJax={tex:{inlineMath:[['\\(','\\)']]},svg:{fontCache:'global'}};
 </script>
 <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
 </body>
