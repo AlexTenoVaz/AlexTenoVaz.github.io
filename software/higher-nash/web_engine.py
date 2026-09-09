@@ -4,7 +4,7 @@ import random
 import sympy as sp
 
 from Funciones import (
-    x, y, z, t, I, sqrt, oo, zoo, latex, limit,
+    x, y, z, t, I, sqrt, oo, zoo, limit,
     default_row_vec, default_col_vec, curve_on_ED, curva, orden_entero,
     jacobian_matrix, solve_matching, next_matching, gauss_custom, order_pol
 )
@@ -93,10 +93,10 @@ def run_demo(jac_order=5):
 
             comparison = {
                 "m1": a + 1, "m2": b + 1,
-                "r21_11": latex(r21_11),
-                "r22_12": latex(r22_12),
-                "r11_21": latex(r11_21),
-                "r12_22": latex(r12_22),
+                "r21_11": sp.latex(r21_11),
+                "r22_12": sp.latex(r22_12),
+                "r11_21": sp.latex(r11_21),
+                "r12_22": sp.latex(r12_22),
                 "different_forward": bool(r21_11 != r22_12),
                 "different_reverse": bool(r11_21 != r12_22),
             }
@@ -105,20 +105,20 @@ def run_demo(jac_order=5):
             break
 
     return {
-        "polynomial": latex(f),
-        "divisor": latex(divisor),
+        "polynomial": sp.latex(f),
+        "divisor": sp.latex(divisor),
         "jac_order": int(jac_order),
         "chart": "zy",
-        "curves": [[latex(e) for e in c] for c in curvas_sobre_div],
-        "curves_down": [[latex(e) for e in c] for c in curvas_bajadas],
+        "curves": [[sp.latex(e) for e in c] for c in curvas_sobre_div],
+        "curves_down": [[sp.latex(e) for e in c] for c in curvas_bajadas],
         "exponents_calculated": exp_curves_calculated,
         "exponents_used": exp_curves,
         "matrix_shape": [int(M.rows), int(M.cols)],
         "matching_count": len(matchings),
         "matchings": matchings,
         "cost": int(cost1),
-        "determinants": [latex(d) for d in determinants],
-        "evaluations": [[latex(v) for v in vals] for vals in evaluations],
+        "determinants": [sp.latex(d) for d in determinants],
+        "evaluations": [[sp.latex(v) for v in vals] for vals in evaluations],
         "comparison": comparison,
         "conclusion": (
             f"The divisor {latex(divisor)} appears in the "
